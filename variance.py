@@ -12,7 +12,7 @@ st.title("📦 Purchase vs Sales Dashboard")
 # =========================
 # Load Excel Data (no uploader)
 # =========================
-file_path = "sales_data.xlsx"   # 🔹 Change this to your actual Excel file name
+file_path = "faisalka.xlsx"   # 🔹 Change this to your actual Excel file name
 df = pd.read_excel(file_path)
 
 # =========================
