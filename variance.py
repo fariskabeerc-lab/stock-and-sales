@@ -6,7 +6,7 @@ import plotly.express as px
 # Page Config
 # ============================
 st.set_page_config(page_title="Highest Unsold Items Dashboard", layout="wide")
-st.title("📦 Highest Unsold Items Dashboard")
+st.title("📦Purchase VS Sale")
 
 # ============================
 # Load Data
