@@ -35,7 +35,7 @@ if selected_outlet != "All":
 # =========================
 # Search Option
 # =========================
-search_term = st.sidebar.text_input("Search by Item Name or Barcode")
+search_term = st.sidebar.text_input("Search by Item Name or Barcode").strip()
 if search_term:
     df = df[
         df['Items'].astype(str).str.contains(search_term, case=False, na=False)
@@ -43,14 +43,13 @@ if search_term:
     ]
 
 # =========================
-# Key Insights
+# Key Insights (Dynamic)
 # =========================
 total_purchase_value = df['Total Purchase'].sum()
 total_sales_value = df['Total Sales'].sum()
 total_qty_purchased = df['Qty Purchased'].sum()
 total_qty_sold = df['QTY Sold'].sum()
 total_stock = df['STOCK'].sum()
-avg_sold_stock_diff = df['Sold-Stock'].mean()
 
 col1, col2, col3, col4, col5 = st.columns(5)
 col1.metric("💰 Total Purchase Value", f"{total_purchase_value:,.2f}")
@@ -60,19 +59,49 @@ col4.metric("🛒 Total Sold Qty", f"{total_qty_sold:,}")
 col5.metric("🏷️ Total Stock", f"{total_stock:,}")
 
 # =========================
-# Bar Chart: Purchase vs Sold
+# Chart Section
 # =========================
-st.subheader("📉 Purchase vs Sold Quantity Comparison")
+st.subheader("📊 Quantity Overview")
 
-chart_df = df.groupby("Items")[["Qty Purchased", "QTY Sold"]].sum().reset_index()
-fig = px.bar(
-    chart_df,
-    x="Items",
-    y=["Qty Purchased", "QTY Sold"],
-    barmode="group",
-    title="Purchase vs Sold Quantity",
-    labels={"value": "Quantity", "Items": "Item"},
-)
+if search_term:
+    # When searched, show total Purchased vs Sold for filtered items
+    summary = pd.DataFrame({
+        "Category": ["Qty Purchased", "QTY Sold"],
+        "Quantity": [total_qty_purchased, total_qty_sold]
+    })
+
+    fig = px.bar(
+        summary,
+        x="Quantity",
+        y="Category",
+        orientation="h",
+        text="Quantity",
+        title=f"Total Purchased vs Sold for '{search_term}'",
+        color="Category",
+    )
+    fig.update_traces(texttemplate='%{text:,}', textposition='outside')
+    fig.update_layout(showlegend=False, height=400)
+else:
+    # Default view — Top 30 items
+    chart_df = (
+        df.groupby("Items")[["Qty Purchased", "QTY Sold"]]
+        .sum()
+        .reset_index()
+        .sort_values(by="QTY Sold", ascending=False)
+        .head(30)
+    )
+
+    fig = px.bar(
+        chart_df,
+        y="Items",
+        x=["Qty Purchased", "QTY Sold"],
+        orientation="h",
+        barmode="group",
+        title="Top 30 Items - Purchase vs Sold Quantity",
+        labels={"value": "Quantity", "Items": "Item"},
+    )
+    fig.update_layout(yaxis={'categoryorder': 'total ascending'}, height=900)
+
 st.plotly_chart(fig, use_container_width=True)
 
 # =========================
