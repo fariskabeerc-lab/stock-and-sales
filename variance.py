@@ -36,27 +36,28 @@ st.sidebar.header("🔍 Filters")
 outlets = ["All"] + sorted(df["Outlet"].dropna().unique().tolist())
 selected_outlet = st.sidebar.selectbox("Select Outlet", outlets)
 
+filtered_df = df.copy()
 if selected_outlet != "All":
-    df = df[df["Outlet"] == selected_outlet]
+    filtered_df = filtered_df[filtered_df["Outlet"] == selected_outlet]
 
 # Search box
 search_query = st.sidebar.text_input("Search by Item Code or Item Name").strip().lower()
 if search_query:
-    df = df[
-        df["Items"].str.lower().str.contains(search_query)
-        | df["Item Code"].astype(str).str.contains(search_query)
+    filtered_df = filtered_df[
+        filtered_df["Items"].str.lower().str.contains(search_query)
+        | filtered_df["Item Code"].astype(str).str.contains(search_query)
     ]
 
 # ============================
 # Key Insights Section
 # ============================
-total_purchased_qty = df["Qty Purchased"].sum()
-total_sold_qty = df["QTY Sold"].sum()
-total_stock = df["STOCK"].sum()
-total_purchase_value = df["Total Purchase"].sum()
-total_sales_value = df["Total Sales"].sum()
-total_profit = df["Profit"].sum()
-sold_stock_diff = df["Sold-Stock"].sum()
+total_purchased_qty = filtered_df["Qty Purchased"].sum()
+total_sold_qty = filtered_df["QTY Sold"].sum()
+total_stock = filtered_df["STOCK"].sum()
+total_purchase_value = filtered_df["Total Purchase"].sum()
+total_sales_value = filtered_df["Total Sales"].sum()
+total_profit = filtered_df["Profit"].sum()
+sold_stock_diff = filtered_df["Sold-Stock"].sum()
 
 st.markdown("### 📊 Key Insights")
 
@@ -78,7 +79,7 @@ st.metric("📊 Sold - Stock Difference", f"{int(sold_stock_diff):,}")
 st.markdown("### 🏷️ Top 50 Highest Unsold Items")
 
 top_unsold = (
-    df.groupby(["Item Code", "Items"], as_index=False)["STOCK"]
+    filtered_df.groupby(["Item Code", "Items"], as_index=False)["STOCK"]
     .sum()
     .sort_values(by="STOCK", ascending=False)
     .head(50)
@@ -108,6 +109,12 @@ fig.update_layout(
 st.plotly_chart(fig, use_container_width=True)
 
 # ============================
+# Data Table (All Columns)
+# ============================
+st.markdown("### 📄 Detailed Data Table")
+st.dataframe(filtered_df, use_container_width=True)
+
+# ============================
 # Footer
 # ============================
-st.caption("📈 Dashboard dynamically updates with outlet and search filters.")
+st.caption("📈 Dashboard dynamically updates with Outlet filter and Search. All columns are displayed in the table.")
