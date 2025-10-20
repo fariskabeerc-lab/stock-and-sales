@@ -23,9 +23,9 @@ df.columns = df.columns.str.strip()
 for col in ["Qty Purchased", "Total Purchase", "STOCK", "QTY Sold", "Total Sales"]:
     df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0)
 
-# Add derived columns
-df["Unsold Qty"] = df["STOCK"]
+# Derived columns
 df["Profit"] = df["Total Sales"] - df["Total Purchase"]
+df["Sold-Stock"] = df["QTY Sold"] - df["STOCK"]
 
 # ============================
 # Sidebar Filters
@@ -56,7 +56,7 @@ total_stock = df["STOCK"].sum()
 total_purchase_value = df["Total Purchase"].sum()
 total_sales_value = df["Total Sales"].sum()
 total_profit = df["Profit"].sum()
-unsold_difference = total_stock - total_sold_qty
+sold_stock_diff = df["Sold-Stock"].sum()
 
 st.markdown("### 📊 Key Insights")
 
@@ -70,7 +70,7 @@ col4.metric("💰 Total Purchase Value", f"{total_purchase_value:,.2f}")
 col5.metric("💵 Total Sales Value", f"{total_sales_value:,.2f}")
 col6.metric("📈 Total Profit", f"{total_profit:,.2f}")
 
-st.metric("📊 Unsold Difference (Stock - Sold)", f"{int(unsold_difference):,}")
+st.metric("📊 Sold - Stock Difference", f"{int(sold_stock_diff):,}")
 
 # ============================
 # Highest Unsold Items Graph
@@ -78,7 +78,8 @@ st.metric("📊 Unsold Difference (Stock - Sold)", f"{int(unsold_difference):,}"
 st.markdown("### 🏷️ Top 50 Highest Unsold Items")
 
 top_unsold = (
-    df.groupby(["Item Code", "Items"], as_index=False)["STOCK"].sum()
+    df.groupby(["Item Code", "Items"], as_index=False)["STOCK"]
+    .sum()
     .sort_values(by="STOCK", ascending=False)
     .head(50)
 )
@@ -90,7 +91,10 @@ fig = px.bar(
     orientation="h",
     title="Top 50 Highest Unsold Items",
     text="STOCK",
+    color="STOCK",
+    color_continuous_scale="Blues"
 )
+
 fig.update_traces(texttemplate='%{text:.0f}', textposition="outside")
 fig.update_layout(
     yaxis=dict(autorange="reversed"),
@@ -106,4 +110,4 @@ st.plotly_chart(fig, use_container_width=True)
 # ============================
 # Footer
 # ============================
-st.caption("📈 Dashboard dynamically updates with search and outlet filters.")
+st.caption("📈 Dashboard dynamically updates with outlet and search filters.")
