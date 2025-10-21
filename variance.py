@@ -120,3 +120,4 @@ st.plotly_chart(fig_unsold, use_container_width=True)
 # ============================
 st.subheader("📋 Detailed Data View")
 st.dataframe(filtered_df, use_container_width=True)
+
