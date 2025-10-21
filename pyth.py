@@ -64,19 +64,19 @@ credit_items = []
 
 if os.path.exists(CREDIT_FILE):
     credit_df = pd.read_excel(CREDIT_FILE)
-    if "Barcode" in credit_df.columns:
-        credit_items = credit_df["Barcode"].astype(str).tolist()
+    if "Item Code" in credit_df.columns:
+        credit_items = credit_df["Item Code"].astype(str).tolist()
     else:
-        st.warning("⚠️ Credit note file must have 'Barcode' column.")
+        st.warning("⚠️ Credit note file must have 'Item Code' column.")
 else:
     st.warning(f"⚠️ Credit note file not found: {CREDIT_FILE}")
 
-# Match sales data barcodes
-if not df.empty and "Barcode" in df.columns:
-    df["Barcode"] = df["Barcode"].astype(str)
-    df["Credit Note"] = df["Barcode"].apply(lambda x: "Yes" if x in credit_items else "No")
+# Match sales data Item Codes
+if not df.empty and "Item Code" in df.columns:
+    df["Item Code"] = df["Item Code"].astype(str)
+    df["Credit Note"] = df["Item Code"].apply(lambda x: "Yes" if x in credit_items else "No")
 else:
-    df["Credit Note"] = "No"  # default if Barcode not present
+    df["Credit Note"] = "No"  # default if Item Code not present
 
 # ===============================
 # SIDEBAR FILTERS
