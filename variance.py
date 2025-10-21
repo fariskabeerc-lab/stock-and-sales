@@ -11,146 +11,107 @@ st.title("📦 EMERGING WORLD")
 # ============================
 # Load Data
 # ============================
-file_path = "faisalka.xlsx"  # Change this if needed
+file_path = "faisalka.xlsx"  # Update your path
 df = pd.read_excel(file_path)
 
 # ============================
-# Validate Columns
+# Preprocess
 # ============================
-required_cols = ["Item Code", "Items", "Qty Purchased", "Total Purchase", "STOCK", "QTY Sold", "Total Sales", "Outlet"]
-missing_cols = [c for c in required_cols if c not in df.columns]
-if missing_cols:
-    st.error(f"Missing columns in Excel: {', '.join(missing_cols)}")
-    st.stop()
-
-# ============================
-# Derived Columns
-# ============================
-df["Sold - Stock"] = df["QTY Sold"] - df["STOCK"]
-df["Unsold Qty"] = df["Qty Purchased"] - df["QTY Sold"]
+df['Unsold'] = df['Qty Purchased'] - df['QTY Sold']
 
 # ============================
 # Sidebar Filters
 # ============================
 st.sidebar.header("🔍 Filters")
+outlet_filter = st.sidebar.multiselect(
+    "Select Outlet",
+    options=df['Outlet'].unique(),
+    default=df['Outlet'].unique()
+)
 
-outlet_list = ["All"] + sorted(df["Outlet"].dropna().unique().tolist())
-selected_outlet = st.sidebar.selectbox("Select Outlet", outlet_list)
-
-search_query = st.sidebar.text_input("Search (Item, Code, Outlet, or Any Field)").strip().lower()
+# Search bar
+search_term = st.text_input("Search Item (name or code):", "").strip().lower()
 
 # ============================
-# Filter Logic
+# Filter Data
 # ============================
-filtered_df = df.copy()
+filtered_df = df[df['Outlet'].isin(outlet_filter)]
 
-if selected_outlet != "All":
-    filtered_df = filtered_df[filtered_df["Outlet"] == selected_outlet]
-
-if search_query:
-    mask = pd.Series(False, index=filtered_df.index)
-    for col in filtered_df.columns:
-        mask = mask | filtered_df[col].astype(str).str.lower().str.contains(search_query, na=False)
-    filtered_df = filtered_df[mask]
+if search_term:
+    filtered_df = filtered_df[
+        df.apply(
+            lambda row: search_term in str(row['Items']).lower()
+            or search_term in str(row['Item Code']).lower(),
+            axis=1
+        )
+    ]
 
 # ============================
 # Key Insights
 # ============================
-total_purchase = filtered_df["Total Purchase"].sum()
-total_sales = filtered_df["Total Sales"].sum()
-total_items = len(filtered_df)
-total_qty_purchased = filtered_df["Qty Purchased"].sum()
-total_qty_sold = filtered_df["QTY Sold"].sum()
-total_stock = filtered_df["STOCK"].sum()
-total_diff = filtered_df["Sold - Stock"].sum()
-
-col1, col2, col3, col4, col5, col6 = st.columns(6)
-col1.metric("🛒 Total Purchase", f"{total_purchase:,.0f}")
-col2.metric("💰 Total Sales", f"{total_sales:,.0f}")
-col3.metric("📦 Total Stock", f"{total_stock:,.0f}")
-col4.metric("📊 Qty Purchased", f"{total_qty_purchased:,.0f}")
-col5.metric("📈 Qty Sold", f"{total_qty_sold:,.0f}")
-col6.metric("⚖️ Sold - Stock", f"{total_diff:,.0f}")
+st.markdown("### 📊 Key Insights")
+col1, col2, col3 = st.columns(3)
+col1.metric("Total Purchased", f"{filtered_df['Qty Purchased'].sum():,.0f}")
+col2.metric("Total Sold", f"{filtered_df['QTY Sold'].sum():,.0f}")
+col3.metric("Total Unsold", f"{filtered_df['Unsold'].sum():,.0f}")
 
 # ============================
-# Graph 1: Highest Unsold Items
-# ============================
-st.subheader("📉 Highest Unsold Items (Qty Purchased - QTY Sold)")
-
-top_limit = 15 if search_query else 50  # shrink graph when searching
-top_unsold = filtered_df.copy()
-top_unsold["Unsold Qty"] = top_unsold["Qty Purchased"] - top_unsold["QTY Sold"]
-top_unsold = top_unsold.sort_values("Unsold Qty", ascending=False).head(top_limit)
-
-fig_unsold = px.bar(
-    top_unsold,
-    x="Unsold Qty",
-    y="Items",
-    orientation="h",
-    text="Unsold Qty",
-    title=f"Top {top_limit} Highest Unsold Items",
-    color="Unsold Qty",
-    color_continuous_scale="Reds",
-)
-fig_unsold.update_layout(
-    yaxis=dict(autorange="reversed"),
-    height=500 if search_query else 900,
-)
-st.plotly_chart(fig_unsold, use_container_width=True)
-
-# ============================
-# Graph 2: Purchase vs Sold
+# Graph 1: Purchase vs Sold
 # ============================
 st.subheader("📊 Purchase vs Sold Comparison")
 
-top_limit_2 = 10 if search_query else 30
-top30 = filtered_df.nlargest(top_limit_2, "Qty Purchased")
+top_limit = 10 if search_term else 30
+top_items = filtered_df.nlargest(top_limit, "Qty Purchased")
 
 fig_compare = px.bar(
-    top30.melt(id_vars=["Items"], value_vars=["Qty Purchased", "QTY Sold"]),
+    top_items.melt(id_vars=["Items"], value_vars=["Qty Purchased", "QTY Sold"]),
     y="Items",
     x="value",
     color="variable",
     orientation="h",
     barmode="group",
-    title=f"Top {top_limit_2} Items: Purchase vs Sold",
+    text="value",
+    title=f"Top {top_limit} Items: Purchase vs Sold",
 )
-fig_compare.update_layout(
-    yaxis=dict(autorange="reversed"),
-    height=400 if search_query else 800,
-)
+fig_compare.update_layout(yaxis=dict(autorange="reversed"), height=400 if search_term else 800)
 st.plotly_chart(fig_compare, use_container_width=True)
 
 # ============================
-# Conditional Graph: Outlet-wise Purchase vs Sold (Only when single item search)
+# Graph 2: Unsold Items
 # ============================
-if search_query and not filtered_df.empty:
-    unique_items = filtered_df["Items"].nunique()
-    if unique_items == 1:  # Only show when one particular item is searched
-        st.subheader("🏪 Outlet-wise Purchase vs Sold for This Item")
+st.subheader("📉 Highest Unsold Items")
 
-        item_name = filtered_df["Items"].iloc[0]
-        item_outlet_data = df[df["Items"].str.lower() == item_name.lower()]
-        outlet_summary = (
-            item_outlet_data.groupby("Outlet")[["Qty Purchased", "QTY Sold"]]
-            .sum()
-            .reset_index()
-        )
+if search_term:
+    if len(outlet_filter) == len(df['Outlet'].unique()):
+        # All outlets selected → aggregate total across all outlets
+        unsold_agg = filtered_df.groupby("Items")[["Qty Purchased", "QTY Sold", "Unsold"]].sum().reset_index()
+        top_unsold = unsold_agg.sort_values("Unsold", ascending=False).head(15)
+        hover_data = ["Qty Purchased", "QTY Sold", "Unsold"]
+    else:
+        # Specific outlet(s) selected → show unsold per outlet
+        top_unsold = filtered_df.copy()
+        hover_data = ["Outlet", "Qty Purchased", "QTY Sold", "Unsold"]
+else:
+    # Default view → top 15 unsold items
+    top_unsold = filtered_df.sort_values("Unsold", ascending=False).head(15)
+    hover_data = ["Outlet", "Qty Purchased", "QTY Sold", "Unsold"]
 
-        fig_outlet = px.bar(
-            outlet_summary.melt(id_vars="Outlet", value_vars=["Qty Purchased", "QTY Sold"]),
-            x="Outlet",
-            y="value",
-            color="variable",
-            barmode="group",
-            title=f"Outlet-wise Purchase vs Sold — {item_name}",
-            text="value",
-        )
-        fig_outlet.update_layout(height=600)
-        st.plotly_chart(fig_outlet, use_container_width=True)
+fig_unsold = px.bar(
+    top_unsold,
+    x="Unsold",
+    y="Items",
+    orientation="h",
+    text="Unsold",
+    hover_data=hover_data,
+    color="Unsold",
+    color_continuous_scale="Reds",
+    title="Highest Unsold Items",
+)
+fig_unsold.update_layout(yaxis=dict(autorange="reversed"), height=500)
+st.plotly_chart(fig_unsold, use_container_width=True)
 
 # ============================
-# Data Table
+# Table Section
 # ============================
 st.subheader("📋 Detailed Data View")
 st.dataframe(filtered_df, use_container_width=True)
