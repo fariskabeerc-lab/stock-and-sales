@@ -69,7 +69,6 @@ col8.metric("Total Items", f"{len(filtered_df):,.0f}")
 # ============================
 st.subheader("📊 Purchase vs Sold Comparison")
 
-# Aggregate per item
 agg_compare = filtered_df.groupby("Items")[["Qty Purchased", "QTY Sold"]].sum().reset_index()
 top_items = agg_compare.nlargest(30, "Qty Purchased")  # top 30 items
 
@@ -84,16 +83,16 @@ fig_compare = px.bar(
 )
 fig_compare.update_traces(
     textposition="outside",
-    textfont_size=16,
-    texttemplate="%{text:,}",  # show thousands with comma
+    textfont_size=14,
+    texttemplate="%{text:,}"
 )
 fig_compare.update_layout(
-    yaxis=dict(autorange="reversed", tickfont=dict(size=14)),
-    xaxis=dict(title="Quantity", tickfont=dict(size=14)),
-    bargap=0.8,  # bigger gap between bars
-    height=1000,  # much bigger chart
-    margin=dict(l=200, r=50, t=50, b=50),
-    legend=dict(font=dict(size=14)),
+    yaxis=dict(autorange="reversed", tickfont=dict(size=12)),
+    xaxis=dict(title="Quantity", tickfont=dict(size=12)),
+    bargap=0.5,  # standard gap
+    height=750,  # standard height
+    margin=dict(l=180, r=50, t=50, b=50),
+    legend=dict(font=dict(size=12)),
 )
 st.plotly_chart(fig_compare, use_container_width=True)
 
@@ -102,9 +101,8 @@ st.plotly_chart(fig_compare, use_container_width=True)
 # ============================
 st.subheader("📉 Highest Unsold Items")
 
-# Aggregate per item
 unsold_agg = filtered_df.groupby("Items")[["Qty Purchased", "QTY Sold", "Unsold"]].sum().reset_index()
-top_unsold = unsold_agg.sort_values("Unsold", ascending=False).head(30)  # top 30 items
+top_unsold = unsold_agg.sort_values("Unsold", ascending=False).head(30)
 
 fig_unsold = px.bar(
     top_unsold,
@@ -118,16 +116,16 @@ fig_unsold = px.bar(
 )
 fig_unsold.update_traces(
     textposition="outside",
-    textfont_size=16,
-    texttemplate="%{text:,}",  # thousands separator
+    textfont_size=14,
+    texttemplate="%{text:,}"
 )
 fig_unsold.update_layout(
-    yaxis=dict(autorange="reversed", tickfont=dict(size=14)),
-    xaxis=dict(title="Unsold Qty", tickfont=dict(size=14)),
-    bargap=0.8,  # bigger spacing
-    height=1100,  # much bigger chart
-    margin=dict(l=200, r=50, t=50, b=50),
-    coloraxis_colorbar=dict(title="Unsold Qty", tickfont=dict(size=14)),
+    yaxis=dict(autorange="reversed", tickfont=dict(size=12)),
+    xaxis=dict(title="Unsold Qty", tickfont=dict(size=12)),
+    bargap=0.5,
+    height=750,  # standard height
+    margin=dict(l=180, r=50, t=50, b=50),
+    coloraxis_colorbar=dict(title="Unsold Qty", tickfont=dict(size=12)),
 )
 st.plotly_chart(fig_unsold, use_container_width=True)
 
