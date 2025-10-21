@@ -8,7 +8,7 @@ import os
 st.set_page_config(page_title="Sales & Profit Dashboard", layout="wide")
 
 OUTLET_FILES = {
-    "shams": "Salem.Xlsx"  # <-- your sales file
+    "shams": "Salem.Xlsx"  # <-- replace with your sales file
 }
 
 # ===============================
@@ -59,12 +59,13 @@ df["Margin %"] = (df["Total Profit"] / df["Total Sales"] * 100).fillna(0).round(
 # ===============================
 # CREDIT NOTE INTEGRATION
 # ===============================
-CREDIT_FILE = "shams credit note sep.Xlsx"  # <-- credit note Excel
+CREDIT_FILE = "shams credit note sep.Xlsx"  # <-- credit note file path
 credit_items = []
 
 if os.path.exists(CREDIT_FILE):
     credit_df = pd.read_excel(CREDIT_FILE)
     if "Item Code" in credit_df.columns:
+        # Only use Item Code list
         credit_items = credit_df["Item Code"].astype(str).tolist()
     else:
         st.warning("⚠️ Credit note file must have 'Item Code' column.")
@@ -72,7 +73,6 @@ else:
     st.warning(f"⚠️ Credit note file not found: {CREDIT_FILE}")
 
 # Match sales items with credit note Item Codes
-# Assuming sales file has a column named "Item Code" or "Items" to match
 sales_item_col = "Item Code" if "Item Code" in df.columns else "Items"
 
 if not df.empty and sales_item_col in df.columns:
@@ -184,3 +184,4 @@ if not filtered_df.empty:
     st.dataframe(outlet_summary.sort_values("Total Sales", ascending=False), use_container_width=True, height=350)
 else:
     st.info("No outlet data to display.")
+
