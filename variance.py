@@ -1,77 +1,13 @@
-import streamlit as st
-import pandas as pd
-import plotly.express as px
-
 # ============================
-# Page Config
-# ============================
-st.set_page_config(page_title="Highest Unsold Items Dashboard", layout="wide")
-st.title("📦 EMERGING WORLD")
-
-# ============================
-# Load Data
-# ============================
-file_path = "faisalka.xlsx"  # Update your path
-df = pd.read_excel(file_path)
-
-# ============================
-# Preprocess
-# ============================
-df['Unsold'] = df['Qty Purchased'] - df['QTY Sold']
-df['Sold - Stock'] = df['QTY Sold'] - df['STOCK']
-
-# ============================
-# Sidebar Filters (list style)
-# ============================
-st.sidebar.header("🔍 Filters")
-
-# Outlet list with "All" on top
-outlet_list = ["All"] + sorted(df['Outlet'].dropna().unique().tolist())
-selected_outlet = st.sidebar.selectbox("Select Outlet", outlet_list)
-
-# Search bar
-search_term = st.sidebar.text_input("Search Item (name or code):", "").strip().lower()
-
-# ============================
-# Filter Data
-# ============================
-if selected_outlet == "All":
-    filtered_df = df.copy()
-else:
-    filtered_df = df[df['Outlet'] == selected_outlet]
-
-if search_term:
-    filtered_df = filtered_df[
-        filtered_df.apply(
-            lambda row: search_term in str(row['Items']).lower()
-            or search_term in str(row['Item Code']).lower(),
-            axis=1
-        )
-    ]
-
-# ============================
-# Key Insights
-# ============================
-st.markdown("### 📊 Key Insights")
-col1, col2, col3, col4, col5, col6 = st.columns(6)
-col1.metric("Total Purchased", f"{filtered_df['Qty Purchased'].sum():,.0f}")
-col2.metric("Total Sold", f"{filtered_df['QTY Sold'].sum():,.0f}")
-col3.metric("Total Stock", f"{filtered_df['STOCK'].sum():,.0f}")
-col4.metric("Sold - Stock", f"{filtered_df['Sold - Stock'].sum():,.0f}")
-col5.metric("Total Unsold", f"{filtered_df['Unsold'].sum():,.0f}")
-col6.metric("Total Items", f"{len(filtered_df):,.0f}")
-
-# ============================
-# Graph 1: Purchase vs Sold
+# Graph 1: Purchase vs Sold (with gap)
 # ============================
 st.subheader("📊 Purchase vs Sold Comparison")
 
 top_limit = 10 if search_term else 30
 
-# Aggregate values per item when search is active to avoid box-box-box issue
-if search_term:
+# Aggregate values per item when search is active
+if search_term and selected_outlet == "All":
     top_items = filtered_df.groupby("Items")[["Qty Purchased", "QTY Sold"]].sum().reset_index()
-    top_items = top_items.nlargest(top_limit, "Qty Purchased")
 else:
     top_items = filtered_df.nlargest(top_limit, "Qty Purchased")
 
@@ -85,22 +21,25 @@ fig_compare = px.bar(
     text="value",
     title=f"Top {top_limit} Items: Purchase vs Sold",
 )
-fig_compare.update_layout(yaxis=dict(autorange="reversed"), height=400 if search_term else 800)
+# Add spacing between items
+fig_compare.update_layout(
+    yaxis=dict(autorange="reversed", tickmode='linear', tickson='boundaries'),
+    bargap=0.4,  # Gap between bars for each item
+    height=400 if search_term else 800
+)
 st.plotly_chart(fig_compare, use_container_width=True)
 
 # ============================
-# Graph 2: Unsold Items
+# Graph 2: Unsold Items (with gap)
 # ============================
 st.subheader("📉 Highest Unsold Items")
 
 if search_term:
     if selected_outlet == "All":
-        # All outlets selected → aggregate total unsold per item
         unsold_agg = filtered_df.groupby("Items")[["Qty Purchased", "QTY Sold", "Unsold"]].sum().reset_index()
         top_unsold = unsold_agg.sort_values("Unsold", ascending=False).head(15)
         hover_data = ["Qty Purchased", "QTY Sold", "Unsold"]
     else:
-        # Specific outlet → show unsold per item
         top_unsold = filtered_df.copy()
         hover_data = ["Outlet", "Qty Purchased", "QTY Sold", "Unsold"]
 else:
@@ -116,13 +55,10 @@ fig_unsold = px.bar(
     hover_data=hover_data,
     color="Unsold",
     color_continuous_scale="Reds",
-    title="Highest Unsold Items",
 )
-fig_unsold.update_layout(yaxis=dict(autorange="reversed"), height=500)
+fig_unsold.update_layout(
+    yaxis=dict(autorange="reversed", tickmode='linear', tickson='boundaries'),
+    bargap=0.4,  # Adds gap between bars
+    height=500
+)
 st.plotly_chart(fig_unsold, use_container_width=True)
-
-# ============================
-# Table Section
-# ============================
-st.subheader("📋 Detailed Data View")
-st.dataframe(filtered_df, use_container_width=True)
