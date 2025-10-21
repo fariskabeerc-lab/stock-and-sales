@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-from st_aggrid import AgGrid, GridOptionsBuilder
 
 # ============================
 # Page Config
@@ -69,8 +68,10 @@ col8.metric("Total Items", f"{len(filtered_df):,.0f}")
 # Graph 1: Purchase vs Sold
 # ============================
 st.subheader("📊 Purchase vs Sold Comparison")
+
+# Aggregate per item
 agg_compare = filtered_df.groupby("Items")[["Qty Purchased", "QTY Sold"]].sum().reset_index()
-top_items = agg_compare.nlargest(30, "Qty Purchased")
+top_items = agg_compare.nlargest(30, "Qty Purchased")  # top 30 items
 
 fig_compare = px.bar(
     top_items.melt(id_vars=["Items"], value_vars=["Qty Purchased", "QTY Sold"]),
@@ -92,8 +93,10 @@ st.plotly_chart(fig_compare, use_container_width=True)
 # Graph 2: Unsold Items
 # ============================
 st.subheader("📉 Highest Unsold Items")
+
+# Aggregate per item
 unsold_agg = filtered_df.groupby("Items")[["Qty Purchased", "QTY Sold", "Unsold"]].sum().reset_index()
-top_unsold = unsold_agg.sort_values("Unsold", ascending=False).head(30)
+top_unsold = unsold_agg.sort_values("Unsold", ascending=False).head(30)  # top 30 items
 
 fig_unsold = px.bar(
     top_unsold,
@@ -113,14 +116,7 @@ fig_unsold.update_layout(
 st.plotly_chart(fig_unsold, use_container_width=True)
 
 # ============================
-# Interactive Table with Column Filters
+# Table Section
 # ============================
 st.subheader("📋 Detailed Data View")
-
-# Configure AgGrid
-gb = GridOptionsBuilder.from_dataframe(filtered_df)
-gb.configure_default_column(filter=True, sortable=True, resizable=True)  # enable Excel-like filtering
-gb.configure_grid_options(domLayout='normal')  # normal layout
-grid_options = gb.build()
-
-AgGrid(filtered_df, gridOptions=grid_options, enable_enterprise_modules=False, height=400)
+st.dataframe(filtered_df, use_container_width=True)
