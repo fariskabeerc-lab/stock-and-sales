@@ -11,10 +11,12 @@ st.title("📦 EMERGING WORLD")
 # ============================
 # Load Data
 # ============================
-file_path = "faisalka.xlsx"  # Change your file path if needed
+file_path = "faisalka.xlsx"  # Change path if needed
 df = pd.read_excel(file_path)
 
-# Ensure required columns exist
+# ============================
+# Validate Columns
+# ============================
 required_cols = ["Item Code", "Items", "Qty Purchased", "Total Purchase", "STOCK", "QTY Sold", "Total Sales", "Outlet"]
 missing_cols = [c for c in required_cols if c not in df.columns]
 if missing_cols:
@@ -35,7 +37,7 @@ st.sidebar.header("🔍 Filters")
 outlet_list = ["All"] + sorted(df["Outlet"].dropna().unique().tolist())
 selected_outlet = st.sidebar.selectbox("Select Outlet", outlet_list)
 
-search_query = st.sidebar.text_input("Search Item Name or Code").strip().lower()
+search_query = st.sidebar.text_input("Search (Item, Code, Outlet, or Any Field)").strip().lower()
 
 # ============================
 # Filter Logic
@@ -46,10 +48,10 @@ if selected_outlet != "All":
     filtered_df = filtered_df[filtered_df["Outlet"] == selected_outlet]
 
 if search_query:
-    filtered_df = filtered_df[
-        filtered_df["Items"].str.lower().str.contains(search_query, na=False)
-        | filtered_df["Item Code"].astype(str).str.contains(search_query, na=False)
-    ]
+    mask = pd.Series(False, index=filtered_df.index)
+    for col in filtered_df.columns:
+        mask = mask | filtered_df[col].astype(str).str.lower().str.contains(search_query, na=False)
+    filtered_df = filtered_df[mask]
 
 # ============================
 # Key Insights
@@ -71,12 +73,14 @@ col5.metric("📈 Qty Sold", f"{total_qty_sold:,.0f}")
 col6.metric("⚖️ Sold - Stock", f"{total_diff:,.0f}")
 
 # ============================
-# Graph 1: Highest Unsold Items (Top 50)
+# Graph 1: Highest Unsold Items
 # ============================
-st.subheader("📉 Top 50 Highest Unsold Items (Qty Purchased - QTY Sold)")
+st.subheader("📉 Highest Unsold Items (Qty Purchased - QTY Sold)")
+
+top_limit = 15 if search_query else 50  # shrink graph when searching
 top_unsold = filtered_df.copy()
 top_unsold["Unsold Qty"] = top_unsold["Qty Purchased"] - top_unsold["QTY Sold"]
-top_unsold = top_unsold.sort_values("Unsold Qty", ascending=False).head(50)
+top_unsold = top_unsold.sort_values("Unsold Qty", ascending=False).head(top_limit)
 
 fig_unsold = px.bar(
     top_unsold,
@@ -84,18 +88,23 @@ fig_unsold = px.bar(
     y="Items",
     orientation="h",
     text="Unsold Qty",
-    title="Top 50 Highest Unsold Items",
+    title=f"Top {top_limit} Highest Unsold Items",
     color="Unsold Qty",
     color_continuous_scale="Reds",
 )
-fig_unsold.update_layout(yaxis=dict(autorange="reversed"), height=900)
+fig_unsold.update_layout(
+    yaxis=dict(autorange="reversed"),
+    height=500 if search_query else 900,
+)
 st.plotly_chart(fig_unsold, use_container_width=True)
 
 # ============================
-# Graph 2: Purchase vs Sold (Top 30)
+# Graph 2: Purchase vs Sold
 # ============================
-st.subheader("📊 Purchase vs Sold (Top 30 Items)")
-top30 = filtered_df.nlargest(30, "Qty Purchased")
+st.subheader("📊 Purchase vs Sold Comparison")
+
+top_limit_2 = 10 if search_query else 30  # shrink if searching
+top30 = filtered_df.nlargest(top_limit_2, "Qty Purchased")
 
 fig_compare = px.bar(
     top30.melt(id_vars=["Items"], value_vars=["Qty Purchased", "QTY Sold"]),
@@ -104,13 +113,16 @@ fig_compare = px.bar(
     color="variable",
     orientation="h",
     barmode="group",
-    title="Top 30 Items: Purchase vs Sold",
+    title=f"Top {top_limit_2} Items: Purchase vs Sold",
 )
-fig_compare.update_layout(yaxis=dict(autorange="reversed"), height=800)
+fig_compare.update_layout(
+    yaxis=dict(autorange="reversed"),
+    height=400 if search_query else 800,
+)
 st.plotly_chart(fig_compare, use_container_width=True)
 
 # ============================
-# Table: Full Data
+# Table View
 # ============================
 st.subheader("📋 Detailed Data View")
 st.dataframe(filtered_df, use_container_width=True)
