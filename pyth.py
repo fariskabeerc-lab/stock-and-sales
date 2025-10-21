@@ -7,8 +7,8 @@ st.title("📋 Items in Sales but Not in Credit Notes")
 # ================================
 # Load Data from fixed paths
 # ================================
-sales_file = r"C:\Users\admin\Desktop\aug sep\sales.xlsx"
-credit_file = r"C:\Users\admin\Desktop\aug sep\credit_notes.xlsx"
+sales_file = r"Salem.Xlsx"
+credit_file = r"shams credit note sep.Xlsx"
 
 # Load Excel files
 sales_df = pd.read_excel(sales_file)
