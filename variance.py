@@ -11,7 +11,7 @@ st.title("📦 EMERGING WORLD")
 # ============================
 # Load Data
 # ============================
-file_path = "faisalka.xlsx"  # Update your path
+file_path = "faisalka.xlsx"  # Update path if needed
 df = pd.read_excel(file_path)
 
 # ============================
@@ -20,26 +20,28 @@ df = pd.read_excel(file_path)
 df['Unsold'] = df['Qty Purchased'] - df['QTY Sold']
 
 # ============================
-# Sidebar Filters
+# Sidebar Filters (list style like before)
 # ============================
 st.sidebar.header("🔍 Filters")
-outlet_filter = st.sidebar.multiselect(
-    "Select Outlet",
-    options=df['Outlet'].unique(),
-    default=df['Outlet'].unique()
-)
+
+# Outlet list with "All" on top
+outlet_list = ["All"] + sorted(df['Outlet'].dropna().unique().tolist())
+selected_outlet = st.sidebar.selectbox("Select Outlet", outlet_list)
 
 # Search bar
-search_term = st.text_input("Search Item (name or code):", "").strip().lower()
+search_term = st.sidebar.text_input("Search Item (name or code):", "").strip().lower()
 
 # ============================
 # Filter Data
 # ============================
-filtered_df = df[df['Outlet'].isin(outlet_filter)]
+if selected_outlet == "All":
+    filtered_df = df.copy()
+else:
+    filtered_df = df[df['Outlet'] == selected_outlet]
 
 if search_term:
     filtered_df = filtered_df[
-        df.apply(
+        filtered_df.apply(
             lambda row: search_term in str(row['Items']).lower()
             or search_term in str(row['Item Code']).lower(),
             axis=1
@@ -59,7 +61,6 @@ col3.metric("Total Unsold", f"{filtered_df['Unsold'].sum():,.0f}")
 # Graph 1: Purchase vs Sold
 # ============================
 st.subheader("📊 Purchase vs Sold Comparison")
-
 top_limit = 10 if search_term else 30
 top_items = filtered_df.nlargest(top_limit, "Qty Purchased")
 
@@ -82,17 +83,16 @@ st.plotly_chart(fig_compare, use_container_width=True)
 st.subheader("📉 Highest Unsold Items")
 
 if search_term:
-    if len(outlet_filter) == len(df['Outlet'].unique()):
-        # All outlets selected → aggregate total across all outlets
+    if selected_outlet == "All":
+        # All outlets selected → aggregate total unsold per item
         unsold_agg = filtered_df.groupby("Items")[["Qty Purchased", "QTY Sold", "Unsold"]].sum().reset_index()
         top_unsold = unsold_agg.sort_values("Unsold", ascending=False).head(15)
         hover_data = ["Qty Purchased", "QTY Sold", "Unsold"]
     else:
-        # Specific outlet(s) selected → show unsold per outlet
+        # Specific outlet → show unsold per item
         top_unsold = filtered_df.copy()
         hover_data = ["Outlet", "Qty Purchased", "QTY Sold", "Unsold"]
 else:
-    # Default view → top 15 unsold items
     top_unsold = filtered_df.sort_values("Unsold", ascending=False).head(15)
     hover_data = ["Outlet", "Qty Purchased", "QTY Sold", "Unsold"]
 
