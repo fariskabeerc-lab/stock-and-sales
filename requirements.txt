@@ -4,4 +4,3 @@ pandas
 numpy
 so
 openpyxl
-from st_aggrid import AgGrid, GridOptionsBuilder
