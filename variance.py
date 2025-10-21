@@ -68,13 +68,10 @@ col8.metric("Total Items", f"{len(filtered_df):,.0f}")
 # Graph 1: Purchase vs Sold
 # ============================
 st.subheader("📊 Purchase vs Sold Comparison")
-top_limit = 10 if search_term else 30
 
-# Aggregate per item for search to avoid multiple bars
-if search_term:
-    top_items = filtered_df.groupby("Items")[["Qty Purchased", "QTY Sold"]].sum().reset_index()
-else:
-    top_items = filtered_df.nlargest(top_limit, "Qty Purchased")
+# Aggregate per item to avoid multiple boxes for the same item
+agg_compare = filtered_df.groupby("Items")[["Qty Purchased", "QTY Sold"]].sum().reset_index()
+top_items = agg_compare.nlargest(50, "Qty Purchased")  # top 50 items max
 
 fig_compare = px.bar(
     top_items.melt(id_vars=["Items"], value_vars=["Qty Purchased", "QTY Sold"]),
@@ -88,7 +85,7 @@ fig_compare = px.bar(
 fig_compare.update_layout(
     yaxis=dict(autorange="reversed", tickmode='linear', tickson='boundaries'),
     bargap=0.4,
-    height=400 if search_term else 800
+    height=600
 )
 st.plotly_chart(fig_compare, use_container_width=True)
 
@@ -97,17 +94,9 @@ st.plotly_chart(fig_compare, use_container_width=True)
 # ============================
 st.subheader("📉 Highest Unsold Items")
 
-if search_term:
-    if selected_outlet == "All":
-        unsold_agg = filtered_df.groupby("Items")[["Qty Purchased", "QTY Sold", "Unsold"]].sum().reset_index()
-        top_unsold = unsold_agg.sort_values("Unsold", ascending=False).head(15)
-        hover_data = ["Qty Purchased", "QTY Sold", "Unsold"]
-    else:
-        top_unsold = filtered_df.copy()
-        hover_data = ["Outlet", "Qty Purchased", "QTY Sold", "Unsold"]
-else:
-    top_unsold = filtered_df.sort_values("Unsold", ascending=False).head(15)
-    hover_data = ["Outlet", "Qty Purchased", "QTY Sold", "Unsold"]
+# Always aggregate per item
+unsold_agg = filtered_df.groupby("Items")[["Qty Purchased", "QTY Sold", "Unsold"]].sum().reset_index()
+top_unsold = unsold_agg.sort_values("Unsold", ascending=False).head(50)  # top 50 max
 
 fig_unsold = px.bar(
     top_unsold,
@@ -115,14 +104,14 @@ fig_unsold = px.bar(
     y="Items",
     orientation="h",
     text="Unsold",
-    hover_data=hover_data,
+    hover_data=["Qty Purchased", "QTY Sold", "Unsold"],
     color="Unsold",
     color_continuous_scale="Reds",
 )
 fig_unsold.update_layout(
     yaxis=dict(autorange="reversed", tickmode='linear', tickson='boundaries'),
     bargap=0.4,
-    height=500
+    height=700
 )
 st.plotly_chart(fig_unsold, use_container_width=True)
 
