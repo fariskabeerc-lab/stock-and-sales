@@ -4,4 +4,3 @@ pandas
 numpy
 so
 openpyxl
-st-aggrid
