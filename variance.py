@@ -71,7 +71,7 @@ st.subheader("📊 Purchase vs Sold Comparison")
 
 # Aggregate per item to avoid multiple boxes for the same item
 agg_compare = filtered_df.groupby("Items")[["Qty Purchased", "QTY Sold"]].sum().reset_index()
-top_items = agg_compare.nlargest(50, "Qty Purchased")  # top 50 items max
+top_items = agg_compare.nlargest(30, "Qty Purchased")  # top 30 items
 
 fig_compare = px.bar(
     top_items.melt(id_vars=["Items"], value_vars=["Qty Purchased", "QTY Sold"]),
@@ -96,7 +96,7 @@ st.subheader("📉 Highest Unsold Items")
 
 # Always aggregate per item
 unsold_agg = filtered_df.groupby("Items")[["Qty Purchased", "QTY Sold", "Unsold"]].sum().reset_index()
-top_unsold = unsold_agg.sort_values("Unsold", ascending=False).head(50)  # top 50 max
+top_unsold = unsold_agg.sort_values("Unsold", ascending=False).head(30)  # top 30 items
 
 fig_unsold = px.bar(
     top_unsold,
