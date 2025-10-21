@@ -82,10 +82,12 @@ fig_compare = px.bar(
     barmode="group",
     text="value",
 )
+fig_compare.update_traces(textposition="outside")  # show values outside bars
 fig_compare.update_layout(
     yaxis=dict(autorange="reversed"),
-    bargap=0.4,
-    height=600
+    bargap=0.6,  # increased gap between bars
+    height=800,  # larger height
+    margin=dict(l=150, r=50, t=50, b=50),
 )
 st.plotly_chart(fig_compare, use_container_width=True)
 
@@ -108,10 +110,12 @@ fig_unsold = px.bar(
     color="Unsold",
     color_continuous_scale="Reds",
 )
+fig_unsold.update_traces(textposition="outside")  # show values outside bars
 fig_unsold.update_layout(
     yaxis=dict(autorange="reversed"),
-    bargap=0.4,
-    height=700
+    bargap=0.6,  # more space between bars
+    height=900,  # bigger chart
+    margin=dict(l=150, r=50, t=50, b=50),
 )
 st.plotly_chart(fig_unsold, use_container_width=True)
 
@@ -120,4 +124,3 @@ st.plotly_chart(fig_unsold, use_container_width=True)
 # ============================
 st.subheader("📋 Detailed Data View")
 st.dataframe(filtered_df, use_container_width=True)
-
