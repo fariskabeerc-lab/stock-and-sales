@@ -82,12 +82,18 @@ fig_compare = px.bar(
     barmode="group",
     text="value",
 )
-fig_compare.update_traces(textposition="outside")  # show values outside bars
+fig_compare.update_traces(
+    textposition="outside",
+    textfont_size=16,
+    texttemplate="%{text:,}",  # show thousands with comma
+)
 fig_compare.update_layout(
-    yaxis=dict(autorange="reversed"),
-    bargap=0.6,  # increased gap between bars
-    height=800,  # larger height
-    margin=dict(l=150, r=50, t=50, b=50),
+    yaxis=dict(autorange="reversed", tickfont=dict(size=14)),
+    xaxis=dict(title="Quantity", tickfont=dict(size=14)),
+    bargap=0.8,  # bigger gap between bars
+    height=1000,  # much bigger chart
+    margin=dict(l=200, r=50, t=50, b=50),
+    legend=dict(font=dict(size=14)),
 )
 st.plotly_chart(fig_compare, use_container_width=True)
 
@@ -110,12 +116,18 @@ fig_unsold = px.bar(
     color="Unsold",
     color_continuous_scale="Reds",
 )
-fig_unsold.update_traces(textposition="outside")  # show values outside bars
+fig_unsold.update_traces(
+    textposition="outside",
+    textfont_size=16,
+    texttemplate="%{text:,}",  # thousands separator
+)
 fig_unsold.update_layout(
-    yaxis=dict(autorange="reversed"),
-    bargap=0.6,  # more space between bars
-    height=900,  # bigger chart
-    margin=dict(l=150, r=50, t=50, b=50),
+    yaxis=dict(autorange="reversed", tickfont=dict(size=14)),
+    xaxis=dict(title="Unsold Qty", tickfont=dict(size=14)),
+    bargap=0.8,  # bigger spacing
+    height=1100,  # much bigger chart
+    margin=dict(l=200, r=50, t=50, b=50),
+    coloraxis_colorbar=dict(title="Unsold Qty", tickfont=dict(size=14)),
 )
 st.plotly_chart(fig_unsold, use_container_width=True)
 
