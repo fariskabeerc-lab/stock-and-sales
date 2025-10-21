@@ -1,8 +1,8 @@
 import streamlit as st
 import pandas as pd
 
-st.set_page_config(page_title="Sales vs Credit Notes", layout="wide")
-st.title("📋 Items in Sales but Not in Credit Notes")
+st.set_page_config(page_title="Negative Margin Items vs Credit Notes", layout="wide")
+st.title("📋 Negative Margin Items in Sales but Not in Credit Notes")
 
 # ================================
 # Load Data from fixed paths
@@ -14,18 +14,25 @@ credit_file = r"shams credit note sep.Xlsx"
 sales_df = pd.read_excel(sales_file)
 credit_df = pd.read_excel(credit_file)
 
-# Ensure Item Codes are strings
+# Clean column names (remove leading/trailing spaces)
+sales_df.columns = sales_df.columns.str.strip()
+credit_df.columns = credit_df.columns.str.strip()
+
+# Convert Item Code to string
 sales_df['Item Code'] = sales_df['Item Code'].astype(str)
 credit_df['Item Code'] = credit_df['Item Code'].astype(str)
 
-# Find items in sales but not in credit notes
-unmatched_items = sales_df[~sales_df['Item Code'].isin(credit_df['Item Code'])]
+# Filter only negative margin items
+negative_margin_sales = sales_df[sales_df['Excise Margin (%)'] < 0]
+
+# Find items in negative margin sales but not in credit notes
+unmatched_items = negative_margin_sales[~negative_margin_sales['Item Code'].isin(credit_df['Item Code'])]
 
 # Display results
-st.subheader("📌 Items in Sales but NOT in Credit Notes")
-st.write(f"Total unmatched items: {unmatched_items.shape[0]}")
+st.subheader("📌 Negative Margin Items NOT in Credit Notes")
+st.write(f"Total unmatched negative margin items: {unmatched_items.shape[0]}")
 
-st.dataframe(unmatched_items[['Item Code', 'Items', 'Category', 'Total Sales', 'Total Profit']])
+st.dataframe(unmatched_items[['Item Code', 'Items', 'Category', 'Total Sales', 'Total Profit', 'Excise Margin (%)']])
 
 # Download option
 def convert_df(df):
@@ -34,6 +41,6 @@ def convert_df(df):
 st.download_button(
     label="📥 Download Unmatched Items as Excel",
     data=convert_df(unmatched_items),
-    file_name="unmatched_items.xlsx",
+    file_name="negative_margin_unmatched_items.xlsx",
     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 )
