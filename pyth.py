@@ -57,25 +57,27 @@ for col in ["Total Sales", "Total Profit"]:
 df["Margin %"] = (df["Total Profit"] / df["Total Sales"] * 100).fillna(0).round(2)
 
 # ===============================
-# CREDIT NOTE INTEGRATION
+# CREDIT NOTE INTEGRATION (FIXED MATCHING)
 # ===============================
 CREDIT_FILE = "shams credit note sep.Xlsx"  # <-- replace with your credit note file path
 credit_items = []
 
 if os.path.exists(CREDIT_FILE):
     credit_df = pd.read_excel(CREDIT_FILE)
+    # Standardize the credit items
     if "Item Code" in credit_df.columns:
-        credit_items = credit_df["Item Code"].astype(str).tolist()
+        credit_items = credit_df["Item Code"].astype(str).str.strip().tolist()
     elif "Barcode" in credit_df.columns:
-        credit_items = credit_df["Barcode"].astype(str).tolist()
+        credit_items = credit_df["Barcode"].astype(str).str.strip().tolist()
     else:
         st.warning("⚠️ Credit note file must have 'Item Code' or 'Barcode' column.")
 else:
     st.warning(f"⚠️ Credit note file not found: {CREDIT_FILE}")
 
-# Add Credit Note column
+# Standardize sales df column and add Credit Note column
 if not df.empty:
-    df["Credit Note"] = df["Item Code"].astype(str).apply(lambda x: "Yes" if x in credit_items else "No")
+    df["Item Code"] = df["Item Code"].astype(str).str.strip()
+    df["Credit Note"] = df["Item Code"].apply(lambda x: "Yes" if x in credit_items else "No")
 
 # ===============================
 # SIDEBAR FILTERS
