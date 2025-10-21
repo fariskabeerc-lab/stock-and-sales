@@ -25,28 +25,50 @@ if not st.session_state.authenticated:
     st.stop()
 
 # ===============================
+# FILE PATHS
+# ===============================
+SALES_FILE = "Salem.Xlsx"  # Replace with your sales file
+CREDIT_FILE = "shams credit note sep.Xlsx"  # Replace with your credit note file
+
+# ===============================
 # LOAD SALES DATA
 # ===============================
-SALES_FILE = "Salem.Xlsx"  # replace with your sales file
-CREDIT_FILE = "shams credit note sep.Xlsx"  # replace with your credit note file
-
 if os.path.exists(SALES_FILE):
     sales_df = pd.read_excel(SALES_FILE)
 else:
     st.error(f"Sales file not found: {SALES_FILE}")
     st.stop()
 
+# Ensure necessary columns
+if "Item Code" not in sales_df.columns:
+    st.error("Sales file must have 'Item Code' column")
+    st.stop()
+
+# Normalize sales Item Code
+sales_df["Item Code"] = sales_df["Item Code"].astype(str).str.strip()
+
+# ===============================
+# LOAD CREDIT NOTE DATA
+# ===============================
 if os.path.exists(CREDIT_FILE):
     credit_df = pd.read_excel(CREDIT_FILE)
 else:
     st.error(f"Credit Note file not found: {CREDIT_FILE}")
     st.stop()
 
-# ===============================
-# NORMALIZE ITEM CODE
-# ===============================
-sales_df["Item Code"] = sales_df["Item Code"].astype(str).str.strip()
-credit_items = credit_df["Item Code"].astype(str).str.strip().tolist()
+# Detect the correct column for Item Code in credit note
+st.write("Columns in Credit Note file:", credit_df.columns.tolist())
+possible_names = ["Item Code", "ItemCode", "ITEM CODE", "Item"]  # add more variations if needed
+for name in possible_names:
+    if name in credit_df.columns:
+        credit_col = name
+        break
+else:
+    st.error("⚠️ Could not find 'Item Code' column in credit note file.")
+    st.stop()
+
+# Normalize credit note Item Codes
+credit_items = credit_df[credit_col].astype(str).str.strip().tolist()
 
 # ===============================
 # ADD CREDIT NOTE COLUMN
@@ -56,8 +78,8 @@ sales_df["Credit Note"] = sales_df["Item Code"].apply(lambda x: "Yes" if x in cr
 # ===============================
 # KEY INSIGHTS
 # ===============================
-total_sales = sales_df["Total Sales"].sum()
-total_profit = sales_df["Total Profit"].sum()
+total_sales = sales_df["Total Sales"].sum() if "Total Sales" in sales_df.columns else 0
+total_profit = sales_df["Total Profit"].sum() if "Total Profit" in sales_df.columns else 0
 avg_margin = (total_profit / total_sales * 100) if total_sales > 0 else 0
 
 credit_yes_count = sales_df[sales_df["Credit Note"] == "Yes"].shape[0]
@@ -75,8 +97,12 @@ c5.metric("❌ Non-Credit Note Items", f"{credit_no_count}")
 # ITEM-WISE TABLE
 # ===============================
 st.subheader("📋 Item-wise Sales & Credit Note Status")
+
+columns_to_show = ["Item Code", "Items", "Category", "Total Sales", "Total Profit", "Credit Note"]
+columns_to_show = [col for col in columns_to_show if col in sales_df.columns]
+
 st.dataframe(
-    sales_df[["Item Code", "Items", "Category", "Total Sales", "Total Profit", "Credit Note"]]
+    sales_df[columns_to_show]
     .sort_values(by="Total Sales", ascending=False)
     .reset_index(drop=True),
     use_container_width=True
