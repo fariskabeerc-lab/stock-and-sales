@@ -1,8 +1,8 @@
 import streamlit as st
 import pandas as pd
 
-st.set_page_config(page_title="Negative Margin Items vs Credit Notes", layout="wide")
-st.title("📋 Negative Margin Items in Sales but Not in Credit Notes")
+st.set_page_config(page_title="Items in Sales but Not in Credit Notes", layout="wide")
+st.title("📋 Items in Sales but Not in Credit Notes")
 
 # ================================
 # Load Data from fixed paths
@@ -14,13 +14,17 @@ credit_file = r"shams credit note sep.Xlsx"
 sales_df = pd.read_excel(sales_file)
 credit_df = pd.read_excel(credit_file)
 
-# Clean column names (remove leading/trailing spaces)
+# Strip leading/trailing spaces from column names
 sales_df.columns = sales_df.columns.str.strip()
 credit_df.columns = credit_df.columns.str.strip()
 
-# Convert Item Code to string
+# Display columns to debug
+st.write("Sales columns:", sales_df.columns.tolist())
+st.write("Credit Notes columns:", credit_df.columns.tolist())
+
+# Convert Item Code to string for comparison
 sales_df['Item Code'] = sales_df['Item Code'].astype(str)
-credit_df['Item Code'] = credit_df['Item Code'].astype(str)
+credit_df['Item Code'] = credit_df['Item Code'].astype(str)  # make sure column is exactly 'Item Code'
 
 # Filter only negative margin items
 negative_margin_sales = sales_df[sales_df['Excise Margin (%)'] < 0]
