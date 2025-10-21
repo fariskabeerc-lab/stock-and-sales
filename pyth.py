@@ -8,7 +8,7 @@ import os
 st.set_page_config(page_title="Sales & Profit Dashboard", layout="wide")
 
 OUTLET_FILES = {
-    "Logistics": "Salem.Xlsx"  # <-- replace with your sales file path
+    "shams": "Salem.Xlsx"  # <-- replace with your sales file path
 }
 
 # ===============================
