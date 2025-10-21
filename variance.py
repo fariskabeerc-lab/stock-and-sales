@@ -101,14 +101,22 @@ if not filtered_df.empty:
         color_continuous_scale="Blues"
     )
 
-    fig_unsold.update_traces(texttemplate='%{text:.0f}', textposition="outside")
+    fig_unsold.update_traces(
+        texttemplate='%{text:.0f}',
+        textposition="outside",
+        textfont_size=16,  # Bigger labels
+        marker_line_width=1.5,
+        marker_line_color="white"
+    )
     fig_unsold.update_layout(
         yaxis=dict(autorange="reversed"),
         xaxis_title="Unsold Quantity",
         yaxis_title="Item",
         height=1000,
         title_x=0.5,
-        showlegend=False,
+        bargap=0.35,  # Gap between bars
+        font=dict(size=16),
+        plot_bgcolor="white"
     )
 
     st.plotly_chart(fig_unsold, use_container_width=True)
@@ -145,12 +153,20 @@ if not filtered_df.empty:
         color_discrete_map={"Total Purchase": "#FF7F0E", "Total Sales": "#1F77B4"}
     )
 
+    fig_compare.update_traces(
+        textfont_size=16,
+        marker_line_width=1.2,
+        marker_line_color="white"
+    )
     fig_compare.update_layout(
         yaxis=dict(autorange="reversed"),
         xaxis_title="Amount",
         yaxis_title="Item",
         height=900,
-        title_x=0.5
+        title_x=0.5,
+        bargap=0.35,  # Increased gap
+        font=dict(size=16),
+        plot_bgcolor="white"
     )
 
     st.plotly_chart(fig_compare, use_container_width=True)
