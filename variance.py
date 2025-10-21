@@ -11,7 +11,7 @@ st.title("📦 EMERGING WORLD")
 # ============================
 # Load Data
 # ============================
-file_path = "faisalka.xlsx"  # Update your path
+file_path = "faisalka.xlsx"  # Update path if needed
 df = pd.read_excel(file_path)
 
 # ============================
@@ -46,16 +46,18 @@ if search_term:
     ]
 
 # ============================
-# Key Insights
+# Key Insights (like before)
 # ============================
 st.markdown("### 📊 Key Insights")
-col1, col2, col3, col4, col5, col6 = st.columns(6)
-col1.metric("Total Purchased", f"{filtered_df['Qty Purchased'].sum():,.0f}")
-col2.metric("Total Sold", f"{filtered_df['QTY Sold'].sum():,.0f}")
-col3.metric("Total Stock", f"{filtered_df['STOCK'].sum():,.0f}")
-col4.metric("Sold - Stock", f"{filtered_df['Sold - Stock'].sum():,.0f}")
-col5.metric("Total Unsold", f"{filtered_df['Unsold'].sum():,.0f}")
-col6.metric("Total Items", f"{len(filtered_df):,.0f}")
+col1, col2, col3, col4, col5, col6, col7, col8 = st.columns(8)
+col1.metric("Total Purchase Qty", f"{filtered_df['Qty Purchased'].sum():,.0f}")
+col2.metric("Total Purchase Value", f"{filtered_df['Total Purchase'].sum():,.2f}")
+col3.metric("Total Sold Qty", f"{filtered_df['QTY Sold'].sum():,.0f}")
+col4.metric("Total Sales Value", f"{filtered_df['Total Sales'].sum():,.2f}")
+col5.metric("Total Stock Qty", f"{filtered_df['STOCK'].sum():,.0f}")
+col6.metric("Unsold Qty", f"{filtered_df['Unsold'].sum():,.0f}")
+col7.metric("Sold - Stock", f"{filtered_df['Sold - Stock'].sum():,.0f}")
+col8.metric("Total Items", f"{len(filtered_df):,.0f}")
 
 # ============================
 # Graph 1: Purchase vs Sold
@@ -63,7 +65,8 @@ col6.metric("Total Items", f"{len(filtered_df):,.0f}")
 st.subheader("📊 Purchase vs Sold Comparison")
 top_limit = 10 if search_term else 30
 
-if search_term and selected_outlet == "All":
+# Aggregate per item for search to avoid multiple bars
+if search_term:
     top_items = filtered_df.groupby("Items")[["Qty Purchased", "QTY Sold"]].sum().reset_index()
 else:
     top_items = filtered_df.nlargest(top_limit, "Qty Purchased")
@@ -123,4 +126,3 @@ st.plotly_chart(fig_unsold, use_container_width=True)
 # ============================
 st.subheader("📋 Detailed Data View")
 st.dataframe(filtered_df, use_container_width=True)
-
