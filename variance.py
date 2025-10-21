@@ -11,7 +11,7 @@ st.title("📦 EMERGING WORLD")
 # ============================
 # Load Data
 # ============================
-file_path = "faisalka.xlsx"  # Update path if needed
+file_path = "faisalka.xlsx"  # Update your path
 df = pd.read_excel(file_path)
 
 # ============================
@@ -21,7 +21,7 @@ df['Unsold'] = df['Qty Purchased'] - df['QTY Sold']
 df['Sold - Stock'] = df['QTY Sold'] - df['STOCK']
 
 # ============================
-# Sidebar Filters (list style)
+# Sidebar Filters
 # ============================
 st.sidebar.header("🔍 Filters")
 outlet_list = ["All"] + sorted(df['Outlet'].dropna().unique().tolist())
@@ -46,14 +46,19 @@ if search_term:
     ]
 
 # ============================
-# Key Insights (like before)
+# Key Insights (2 rows)
 # ============================
 st.markdown("### 📊 Key Insights")
-col1, col2, col3, col4, col5, col6, col7, col8 = st.columns(8)
+
+# First row
+col1, col2, col3, col4 = st.columns(4)
 col1.metric("Total Purchase Qty", f"{filtered_df['Qty Purchased'].sum():,.0f}")
 col2.metric("Total Purchase Value", f"{filtered_df['Total Purchase'].sum():,.2f}")
 col3.metric("Total Sold Qty", f"{filtered_df['QTY Sold'].sum():,.0f}")
 col4.metric("Total Sales Value", f"{filtered_df['Total Sales'].sum():,.2f}")
+
+# Second row
+col5, col6, col7, col8 = st.columns(4)
 col5.metric("Total Stock Qty", f"{filtered_df['STOCK'].sum():,.0f}")
 col6.metric("Unsold Qty", f"{filtered_df['Unsold'].sum():,.0f}")
 col7.metric("Sold - Stock", f"{filtered_df['Sold - Stock'].sum():,.0f}")
