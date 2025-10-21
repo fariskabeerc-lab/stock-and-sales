@@ -50,14 +50,12 @@ if search_term:
 # ============================
 st.markdown("### 📊 Key Insights")
 
-# First row
 col1, col2, col3, col4 = st.columns(4)
 col1.metric("Total Purchase Qty", f"{filtered_df['Qty Purchased'].sum():,.0f}")
 col2.metric("Total Purchase Value", f"{filtered_df['Total Purchase'].sum():,.2f}")
 col3.metric("Total Sold Qty", f"{filtered_df['QTY Sold'].sum():,.0f}")
 col4.metric("Total Sales Value", f"{filtered_df['Total Sales'].sum():,.2f}")
 
-# Second row
 col5, col6, col7, col8 = st.columns(4)
 col5.metric("Total Stock Qty", f"{filtered_df['STOCK'].sum():,.0f}")
 col6.metric("Unsold Qty", f"{filtered_df['Unsold'].sum():,.0f}")
@@ -70,7 +68,7 @@ col8.metric("Total Items", f"{len(filtered_df):,.0f}")
 st.subheader("📊 Purchase vs Sold Comparison")
 
 agg_compare = filtered_df.groupby("Items")[["Qty Purchased", "QTY Sold"]].sum().reset_index()
-top_items = agg_compare.nlargest(30, "Qty Purchased")  # top 30 items
+top_items = agg_compare.nlargest(30, "Qty Purchased")
 
 fig_compare = px.bar(
     top_items.melt(id_vars=["Items"], value_vars=["Qty Purchased", "QTY Sold"]),
@@ -89,9 +87,9 @@ fig_compare.update_traces(
 fig_compare.update_layout(
     yaxis=dict(autorange="reversed", tickfont=dict(size=12)),
     xaxis=dict(title="Quantity", tickfont=dict(size=12)),
-    bargap=0.5,  # standard gap
-    height=750,  # standard height
-    margin=dict(l=180, r=50, t=50, b=50),
+    bargap=0.3,  # smaller gap = thicker bars
+    height=800,  # slightly taller for spacing
+    margin=dict(l=220, r=50, t=50, b=50),
     legend=dict(font=dict(size=12)),
 )
 st.plotly_chart(fig_compare, use_container_width=True)
@@ -122,9 +120,9 @@ fig_unsold.update_traces(
 fig_unsold.update_layout(
     yaxis=dict(autorange="reversed", tickfont=dict(size=12)),
     xaxis=dict(title="Unsold Qty", tickfont=dict(size=12)),
-    bargap=0.5,
-    height=750,  # standard height
-    margin=dict(l=180, r=50, t=50, b=50),
+    bargap=0.3,  # smaller gap = thicker bars
+    height=850,  # taller chart for more room
+    margin=dict(l=220, r=50, t=50, b=50),
     coloraxis_colorbar=dict(title="Unsold Qty", tickfont=dict(size=12)),
 )
 st.plotly_chart(fig_unsold, use_container_width=True)
