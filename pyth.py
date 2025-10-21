@@ -8,7 +8,7 @@ import os
 st.set_page_config(page_title="Sales & Profit Dashboard", layout="wide")
 
 OUTLET_FILES = {
-    "shams": "Salem.Xlsx"  # <-- replace with your sales file path
+    "shams": "Salem.Xlsx"  # <-- your sales file
 }
 
 # ===============================
@@ -29,10 +29,10 @@ if not st.session_state.authenticated:
     st.stop()
 
 # ===============================
-# LOAD ALL DATA
+# LOAD SALES DATA
 # ===============================
 @st.cache_data
-def load_all_outlet_data():
+def load_sales_data():
     all_data = []
     for outlet, file in OUTLET_FILES.items():
         if os.path.exists(file):
@@ -43,7 +43,7 @@ def load_all_outlet_data():
             st.warning(f"⚠️ File not found: {file}")
     return pd.concat(all_data, ignore_index=True) if all_data else pd.DataFrame()
 
-df = load_all_outlet_data()
+df = load_sales_data()
 
 # Remove items without category
 df = df[df["Category"].notna()]
@@ -59,7 +59,7 @@ df["Margin %"] = (df["Total Profit"] / df["Total Sales"] * 100).fillna(0).round(
 # ===============================
 # CREDIT NOTE INTEGRATION
 # ===============================
-CREDIT_FILE = "shams credit note sep.Xlsx"  # <-- replace with your credit note file path
+CREDIT_FILE = "shams credit note sep.Xlsx"  # <-- credit note Excel
 credit_items = []
 
 if os.path.exists(CREDIT_FILE):
@@ -71,30 +71,29 @@ if os.path.exists(CREDIT_FILE):
 else:
     st.warning(f"⚠️ Credit note file not found: {CREDIT_FILE}")
 
-# Match sales data Item Codes
-if not df.empty and "Item Code" in df.columns:
-    df["Item Code"] = df["Item Code"].astype(str)
-    df["Credit Note"] = df["Item Code"].apply(lambda x: "Yes" if x in credit_items else "No")
+# Match sales items with credit note Item Codes
+# Assuming sales file has a column named "Item Code" or "Items" to match
+sales_item_col = "Item Code" if "Item Code" in df.columns else "Items"
+
+if not df.empty and sales_item_col in df.columns:
+    df[sales_item_col] = df[sales_item_col].astype(str)
+    df["Credit Note"] = df[sales_item_col].apply(lambda x: "Yes" if x in credit_items else "No")
 else:
-    df["Credit Note"] = "No"  # default if Item Code not present
+    df["Credit Note"] = "No"
 
 # ===============================
 # SIDEBAR FILTERS
 # ===============================
 st.sidebar.header("🔍 Filters")
 
-# Category Filter
 categories = ["All"] + sorted(df["Category"].unique().tolist())
 selected_category = st.sidebar.selectbox("Select Category", categories)
 
-# Exclude Categories Filter (multi-select)
 exclude_categories = st.sidebar.multiselect("Exclude Categories", options=df["Category"].unique())
 
-# Outlet Filter
 outlets = ["All"] + sorted(df["Outlet"].unique().tolist())
 selected_outlet = st.sidebar.selectbox("Select Outlet", outlets)
 
-# Margin Filter (non-overlapping)
 margin_filters = ["All", "< 0", "0 - 5", "5 - 10", "10 - 20", "20 - 30", "30 +"]
 selected_margin = st.sidebar.selectbox("Select Margin Range (%)", margin_filters)
 
@@ -103,19 +102,15 @@ selected_margin = st.sidebar.selectbox("Select Margin Range (%)", margin_filters
 # ===============================
 filtered_df = df.copy()
 
-# Include Category
 if selected_category != "All":
     filtered_df = filtered_df[filtered_df["Category"] == selected_category]
 
-# Exclude Categories
 if exclude_categories:
     filtered_df = filtered_df[~filtered_df["Category"].isin(exclude_categories)]
 
-# Outlet
 if selected_outlet != "All":
     filtered_df = filtered_df[filtered_df["Outlet"] == selected_outlet]
 
-# Margin
 if selected_margin != "All":
     if selected_margin == "< 0":
         filtered_df = filtered_df[filtered_df["Margin %"] < 0]
@@ -137,7 +132,7 @@ st.title("📊 Sales & Profit Insights (Sep)")
 
 search_term = st.text_input("🔎 Search Item Name", placeholder="Type an item name...")
 if search_term:
-    filtered_df = filtered_df[filtered_df["Items"].str.contains(search_term, case=False, na=False)]
+    filtered_df = filtered_df[filtered_df[sales_item_col].str.contains(search_term, case=False, na=False)]
 
 # ===============================
 # KEY INSIGHTS
@@ -167,7 +162,7 @@ st.subheader("📋 Item-wise Sales, Profit, Margin & Credit Note Status")
 
 if not filtered_df.empty:
     st.dataframe(
-        filtered_df[["Outlet", "Category", "Items", "Total Sales", "Total Profit", "Margin %", "Credit Note"]]
+        filtered_df[["Outlet", "Category", sales_item_col, "Total Sales", "Total Profit", "Margin %", "Credit Note"]]
         .sort_values(by="Margin %", ascending=True)
         .reset_index(drop=True),
         use_container_width=True,
