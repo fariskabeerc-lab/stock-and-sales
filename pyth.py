@@ -43,8 +43,19 @@ if "Item Code" not in sales_df.columns:
 # Normalize sales Item Code
 sales_df["Item Code"] = sales_df["Item Code"].astype(str).str.strip()
 
+# Ensure numeric columns
+for col in ["Total Sales", "Total Profit"]:
+    if col in sales_df.columns:
+        sales_df[col] = pd.to_numeric(sales_df[col], errors="coerce").fillna(0)
+
+# Compute Margin %
+if "Total Sales" in sales_df.columns and "Total Profit" in sales_df.columns:
+    sales_df["Margin %"] = (sales_df["Total Profit"] / sales_df["Total Sales"] * 100).fillna(0).round(2)
+else:
+    sales_df["Margin %"] = 0
+
 # ===============================
-# CREDIT NOTE ITEM CODES (directly from your list)
+# CREDIT NOTE ITEM CODES
 # ===============================
 credit_items = [
     "6291069730531","6291069730562","6281001305026","9714226230912","1098551452576",
@@ -62,23 +73,74 @@ credit_items = [
     "6290360271811"
 ]
 
-# Strip spaces (just in case)
 credit_items = [str(x).strip() for x in credit_items]
 
-# ===============================
-# ADD CREDIT NOTE COLUMN
-# ===============================
+# Add Credit Note column
 sales_df["Credit Note"] = sales_df["Item Code"].apply(lambda x: "Yes" if x in credit_items else "No")
+
+# ===============================
+# SIDEBAR FILTERS
+# ===============================
+st.sidebar.header("🔍 Filters")
+
+# Category filter
+categories = ["All"] + sorted(sales_df["Category"].dropna().unique().tolist()) if "Category" in sales_df.columns else ["All"]
+selected_category = st.sidebar.selectbox("Select Category", categories)
+
+# Outlet filter
+outlets = ["All"] + sorted(sales_df["Outlet"].dropna().unique().tolist()) if "Outlet" in sales_df.columns else ["All"]
+selected_outlet = st.sidebar.selectbox("Select Outlet", outlets)
+
+# Margin filter
+margin_filters = ["All", "< 0", "0 - 5", "5 - 10", "10 - 20", "20 - 30", "30 +"]
+selected_margin = st.sidebar.selectbox("Select Margin Range (%)", margin_filters)
+
+# ===============================
+# APPLY FILTERS
+# ===============================
+filtered_df = sales_df.copy()
+
+# Category
+if selected_category != "All" and "Category" in filtered_df.columns:
+    filtered_df = filtered_df[filtered_df["Category"] == selected_category]
+
+# Outlet
+if selected_outlet != "All" and "Outlet" in filtered_df.columns:
+    filtered_df = filtered_df[filtered_df["Outlet"] == selected_outlet]
+
+# Margin
+if selected_margin != "All":
+    if selected_margin == "< 0":
+        filtered_df = filtered_df[filtered_df["Margin %"] < 0]
+    elif selected_margin == "0 - 5":
+        filtered_df = filtered_df[(filtered_df["Margin %"] >= 0) & (filtered_df["Margin %"] < 5)]
+    elif selected_margin == "5 - 10":
+        filtered_df = filtered_df[(filtered_df["Margin %"] >= 5) & (filtered_df["Margin %"] < 10)]
+    elif selected_margin == "10 - 20":
+        filtered_df = filtered_df[(filtered_df["Margin %"] >= 10) & (filtered_df["Margin %"] < 20)]
+    elif selected_margin == "20 - 30":
+        filtered_df = filtered_df[(filtered_df["Margin %"] >= 20) & (filtered_df["Margin %"] < 30)]
+    elif selected_margin == "30 +":
+        filtered_df = filtered_df[filtered_df["Margin %"] >= 30]
+
+# ===============================
+# SEARCH BAR
+# ===============================
+st.title("📊 Sales & Profit Insights")
+
+search_term = st.text_input("🔎 Search Item Name", placeholder="Type an item name...")
+if search_term and "Items" in filtered_df.columns:
+    filtered_df = filtered_df[filtered_df["Items"].str.contains(search_term, case=False, na=False)]
 
 # ===============================
 # KEY INSIGHTS
 # ===============================
-total_sales = sales_df["Total Sales"].sum() if "Total Sales" in sales_df.columns else 0
-total_profit = sales_df["Total Profit"].sum() if "Total Profit" in sales_df.columns else 0
+total_sales = filtered_df["Total Sales"].sum() if "Total Sales" in filtered_df.columns else 0
+total_profit = filtered_df["Total Profit"].sum() if "Total Profit" in filtered_df.columns else 0
 avg_margin = (total_profit / total_sales * 100) if total_sales > 0 else 0
 
-credit_yes_count = sales_df[sales_df["Credit Note"] == "Yes"].shape[0]
-credit_no_count = sales_df[sales_df["Credit Note"] == "No"].shape[0]
+credit_yes_count = filtered_df[filtered_df["Credit Note"] == "Yes"].shape[0]
+credit_no_count = filtered_df[filtered_df["Credit Note"] == "No"].shape[0]
 
 st.subheader("📈 Key Insights")
 c1, c2, c3, c4, c5 = st.columns(5)
@@ -93,12 +155,28 @@ c5.metric("❌ Non-Credit Note Items", f"{credit_no_count}")
 # ===============================
 st.subheader("📋 Item-wise Sales & Credit Note Status")
 
-columns_to_show = ["Item Code", "Items", "Category", "Total Sales", "Total Profit", "Credit Note"]
-columns_to_show = [col for col in columns_to_show if col in sales_df.columns]
+columns_to_show = ["Item Code", "Items", "Category", "Outlet", "Total Sales", "Total Profit", "Margin %", "Credit Note"]
+columns_to_show = [col for col in columns_to_show if col in filtered_df.columns]
 
 st.dataframe(
-    sales_df[columns_to_show]
-    .sort_values(by="Total Sales", ascending=False)
+    filtered_df[columns_to_show]
+    .sort_values(by="Margin %", ascending=True)
     .reset_index(drop=True),
-    use_container_width=True
+    use_container_width=True,
+    height=450
 )
+
+# ===============================
+# OUTLET-WISE TOTALS
+# ===============================
+st.subheader("🏪 Outlet-wise Total Sales, Profit & Avg Margin")
+if "Outlet" in filtered_df.columns and not filtered_df.empty:
+    outlet_summary = (
+        filtered_df.groupby("Outlet")
+        .agg({"Total Sales": "sum", "Total Profit": "sum"})
+        .reset_index()
+    )
+    outlet_summary["Avg Margin %"] = (outlet_summary["Total Profit"] / outlet_summary["Total Sales"] * 100).round(2)
+    st.dataframe(outlet_summary.sort_values("Total Sales", ascending=False), use_container_width=True, height=350)
+else:
+    st.info("No outlet data to display.")
