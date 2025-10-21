@@ -11,7 +11,7 @@ st.title("📦 EMERGING WORLD")
 # ============================
 # Load Data
 # ============================
-file_path = "faisalka.xlsx"  # Update path if needed
+file_path = "faisalka.xlsx"  # Update your path
 df = pd.read_excel(file_path)
 
 # ============================
@@ -50,7 +50,7 @@ if search_term:
     ]
 
 # ============================
-# Key Insights (old style)
+# Key Insights
 # ============================
 st.markdown("### 📊 Key Insights")
 col1, col2, col3, col4, col5, col6 = st.columns(6)
@@ -65,8 +65,15 @@ col6.metric("Total Items", f"{len(filtered_df):,.0f}")
 # Graph 1: Purchase vs Sold
 # ============================
 st.subheader("📊 Purchase vs Sold Comparison")
+
 top_limit = 10 if search_term else 30
-top_items = filtered_df.nlargest(top_limit, "Qty Purchased")
+
+# Aggregate values per item when search is active to avoid box-box-box issue
+if search_term:
+    top_items = filtered_df.groupby("Items")[["Qty Purchased", "QTY Sold"]].sum().reset_index()
+    top_items = top_items.nlargest(top_limit, "Qty Purchased")
+else:
+    top_items = filtered_df.nlargest(top_limit, "Qty Purchased")
 
 fig_compare = px.bar(
     top_items.melt(id_vars=["Items"], value_vars=["Qty Purchased", "QTY Sold"]),
@@ -119,4 +126,3 @@ st.plotly_chart(fig_unsold, use_container_width=True)
 # ============================
 st.subheader("📋 Detailed Data View")
 st.dataframe(filtered_df, use_container_width=True)
-
