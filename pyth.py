@@ -25,14 +25,10 @@ if not st.session_state.authenticated:
     st.stop()
 
 # ===============================
-# FILE PATHS
-# ===============================
-SALES_FILE = "Salem.Xlsx"  # Replace with your sales file
-CREDIT_FILE = "shams credit note sep.Xlsx"  # Replace with your credit note file
-
-# ===============================
 # LOAD SALES DATA
 # ===============================
+SALES_FILE = "Salem.Xlsx"  # Replace with your sales file
+
 if os.path.exists(SALES_FILE):
     sales_df = pd.read_excel(SALES_FILE)
 else:
@@ -48,27 +44,26 @@ if "Item Code" not in sales_df.columns:
 sales_df["Item Code"] = sales_df["Item Code"].astype(str).str.strip()
 
 # ===============================
-# LOAD CREDIT NOTE DATA
+# CREDIT NOTE ITEM CODES (directly from your list)
 # ===============================
-if os.path.exists(CREDIT_FILE):
-    credit_df = pd.read_excel(CREDIT_FILE)
-else:
-    st.error(f"Credit Note file not found: {CREDIT_FILE}")
-    st.stop()
+credit_items = [
+    "6291069730531","6291069730562","6281001305026","9714226230912","1098551452576",
+    "100077121778","100079323603","6290361320273","6290361320273","6291103658722",
+    "8908004178027","8908004178027","8908004178027","6050633566569","8901440208259",
+    "8902850036647","8902102126232","8902102126232","9963087000000","6050633566576",
+    "6291069730586","6291069730579","6291101408619","6291108339169","8901440203421",
+    "6281034000356","8901440001034","6291069730548","6290360452104","6290360453187",
+    "6290360453194","8902102164241","8901440208266","6281001820284","6281001820291",
+    "6290360468426","6290360468433","6290360468440","6290360468464","6290360468471",
+    "6290360468488","8902102164289","8908004178591","200023898","6291101408633",
+    "6291101408626","8901440217930","100075601837","100077820233","6291079218258",
+    "6291079218258","6291069730555","6291101407438","6050633566552","9714226107016",
+    "6291101715359","4200115199200","0990107529293","6805699956027","788364062413",
+    "6290360271811"
+]
 
-# Detect the correct column for Item Code in credit note
-st.write("Columns in Credit Note file:", credit_df.columns.tolist())
-possible_names = ["Item Code", "ItemCode", "ITEM CODE", "Item"]  # add more variations if needed
-for name in possible_names:
-    if name in credit_df.columns:
-        credit_col = name
-        break
-else:
-    st.error("⚠️ Could not find 'Item Code' column in credit note file.")
-    st.stop()
-
-# Normalize credit note Item Codes
-credit_items = credit_df[credit_col].astype(str).str.strip().tolist()
+# Strip spaces (just in case)
+credit_items = [str(x).strip() for x in credit_items]
 
 # ===============================
 # ADD CREDIT NOTE COLUMN
