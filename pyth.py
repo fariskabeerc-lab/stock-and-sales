@@ -57,27 +57,26 @@ for col in ["Total Sales", "Total Profit"]:
 df["Margin %"] = (df["Total Profit"] / df["Total Sales"] * 100).fillna(0).round(2)
 
 # ===============================
-# CREDIT NOTE INTEGRATION (FIXED MATCHING)
+# CREDIT NOTE INTEGRATION
 # ===============================
 CREDIT_FILE = "shams credit note sep.Xlsx"  # <-- replace with your credit note file path
 credit_items = []
 
 if os.path.exists(CREDIT_FILE):
     credit_df = pd.read_excel(CREDIT_FILE)
-    # Standardize the credit items
-    if "Item Code" in credit_df.columns:
-        credit_items = credit_df["Item Code"].astype(str).str.strip().tolist()
-    elif "Barcode" in credit_df.columns:
-        credit_items = credit_df["Barcode"].astype(str).str.strip().tolist()
+    if "Barcode" in credit_df.columns:
+        credit_items = credit_df["Barcode"].astype(str).tolist()
     else:
-        st.warning("⚠️ Credit note file must have 'Item Code' or 'Barcode' column.")
+        st.warning("⚠️ Credit note file must have 'Barcode' column.")
 else:
     st.warning(f"⚠️ Credit note file not found: {CREDIT_FILE}")
 
-# Standardize sales df column and add Credit Note column
-if not df.empty:
-    df["Item Code"] = df["Item Code"].astype(str).str.strip()
-    df["Credit Note"] = df["Item Code"].apply(lambda x: "Yes" if x in credit_items else "No")
+# Match sales data barcodes
+if not df.empty and "Barcode" in df.columns:
+    df["Barcode"] = df["Barcode"].astype(str)
+    df["Credit Note"] = df["Barcode"].apply(lambda x: "Yes" if x in credit_items else "No")
+else:
+    df["Credit Note"] = "No"  # default if Barcode not present
 
 # ===============================
 # SIDEBAR FILTERS
@@ -148,19 +147,16 @@ if not filtered_df.empty:
     total_profit = filtered_df["Total Profit"].sum()
     avg_margin = (total_profit / total_sales * 100) if total_sales > 0 else 0
 
-    credit_yes = filtered_df[filtered_df["Credit Note"] == "Yes"]
-    credit_no = filtered_df[filtered_df["Credit Note"] == "No"]
-
-    total_sales_credit_yes = credit_yes["Total Sales"].sum()
-    total_sales_credit_no = credit_no["Total Sales"].sum()
+    credit_yes_count = filtered_df[filtered_df["Credit Note"] == "Yes"].shape[0]
+    credit_no_count = filtered_df[filtered_df["Credit Note"] == "No"].shape[0]
 
     st.subheader("📈 Key Insights")
     c1, c2, c3, c4, c5 = st.columns(5)
     c1.metric("💰 Total Sales", f"{total_sales:,.2f}")
     c2.metric("📊 Total Profit", f"{total_profit:,.2f}")
     c3.metric("⚙️ Avg. Margin %", f"{avg_margin:.2f}%")
-    c4.metric("✅ Credit Note Items (Sales)", f"{total_sales_credit_yes:,.2f}")
-    c5.metric("❌ Non-Credit Note Items (Sales)", f"{total_sales_credit_no:,.2f}")
+    c4.metric("✅ Credit Note Items", f"{credit_yes_count}")
+    c5.metric("❌ Non-Credit Note Items", f"{credit_no_count}")
 else:
     st.warning("No data found for the selected filters or search term.")
 
