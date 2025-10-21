@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+from st_aggrid import AgGrid, GridOptionsBuilder
 
 # ============================
 # Page Config
@@ -68,13 +69,8 @@ col8.metric("Total Items", f"{len(filtered_df):,.0f}")
 # Graph 1: Purchase vs Sold
 # ============================
 st.subheader("📊 Purchase vs Sold Comparison")
-top_limit = 10 if search_term else 30
-
-# Aggregate per item for search to avoid multiple bars
-if search_term:
-    top_items = filtered_df.groupby("Items")[["Qty Purchased", "QTY Sold"]].sum().reset_index()
-else:
-    top_items = filtered_df.nlargest(top_limit, "Qty Purchased")
+agg_compare = filtered_df.groupby("Items")[["Qty Purchased", "QTY Sold"]].sum().reset_index()
+top_items = agg_compare.nlargest(30, "Qty Purchased")
 
 fig_compare = px.bar(
     top_items.melt(id_vars=["Items"], value_vars=["Qty Purchased", "QTY Sold"]),
@@ -86,9 +82,9 @@ fig_compare = px.bar(
     text="value",
 )
 fig_compare.update_layout(
-    yaxis=dict(autorange="reversed", tickmode='linear', tickson='boundaries'),
+    yaxis=dict(autorange="reversed"),
     bargap=0.4,
-    height=400 if search_term else 800
+    height=600
 )
 st.plotly_chart(fig_compare, use_container_width=True)
 
@@ -96,18 +92,8 @@ st.plotly_chart(fig_compare, use_container_width=True)
 # Graph 2: Unsold Items
 # ============================
 st.subheader("📉 Highest Unsold Items")
-
-if search_term:
-    if selected_outlet == "All":
-        unsold_agg = filtered_df.groupby("Items")[["Qty Purchased", "QTY Sold", "Unsold"]].sum().reset_index()
-        top_unsold = unsold_agg.sort_values("Unsold", ascending=False).head(15)
-        hover_data = ["Qty Purchased", "QTY Sold", "Unsold"]
-    else:
-        top_unsold = filtered_df.copy()
-        hover_data = ["Outlet", "Qty Purchased", "QTY Sold", "Unsold"]
-else:
-    top_unsold = filtered_df.sort_values("Unsold", ascending=False).head(15)
-    hover_data = ["Outlet", "Qty Purchased", "QTY Sold", "Unsold"]
+unsold_agg = filtered_df.groupby("Items")[["Qty Purchased", "QTY Sold", "Unsold"]].sum().reset_index()
+top_unsold = unsold_agg.sort_values("Unsold", ascending=False).head(30)
 
 fig_unsold = px.bar(
     top_unsold,
@@ -115,19 +101,26 @@ fig_unsold = px.bar(
     y="Items",
     orientation="h",
     text="Unsold",
-    hover_data=hover_data,
+    hover_data=["Qty Purchased", "QTY Sold", "Unsold"],
     color="Unsold",
     color_continuous_scale="Reds",
 )
 fig_unsold.update_layout(
-    yaxis=dict(autorange="reversed", tickmode='linear', tickson='boundaries'),
+    yaxis=dict(autorange="reversed"),
     bargap=0.4,
-    height=500
+    height=700
 )
 st.plotly_chart(fig_unsold, use_container_width=True)
 
 # ============================
-# Table Section
+# Interactive Table with Column Filters
 # ============================
 st.subheader("📋 Detailed Data View")
-st.dataframe(filtered_df, use_container_width=True)
+
+# Configure AgGrid
+gb = GridOptionsBuilder.from_dataframe(filtered_df)
+gb.configure_default_column(filter=True, sortable=True, resizable=True)  # enable Excel-like filtering
+gb.configure_grid_options(domLayout='normal')  # normal layout
+grid_options = gb.build()
+
+AgGrid(filtered_df, gridOptions=grid_options, enable_enterprise_modules=False, height=400)
