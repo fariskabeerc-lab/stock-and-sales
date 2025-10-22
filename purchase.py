@@ -17,7 +17,7 @@ def load_data(file_path):
     df.columns = df.columns.str.strip()  # Clean column names
     return df
 
-file_path = "purchase_data.xlsx"  # <-- Change file name here
+file_path = "outlet wise sept to oct21.xlsx"  # <-- Change file name here
 df = load_data(file_path)
 
 # ===============================
